@@ -23,6 +23,8 @@ namespace PushSharp.Apple
 		private const int APNS_PRODUCTION_FEEDBACK_PORT = 2196;
 		#endregion
 
+		#region Constructors
+
 		public ApplePushChannelSettings(bool production, string certificateFile, string certificateFilePwd, bool disableCertificateCheck = false) 
 			: this(production, System.IO.File.ReadAllBytes(certificateFile), certificateFilePwd, disableCertificateCheck) { }
 
@@ -35,12 +37,10 @@ namespace PushSharp.Apple
 		//      Because of lack of permissions on most hosting services.
 		//      So MachineKeySet should be used instead.
 		public ApplePushChannelSettings(bool production, byte[] certificateData, string certificateFilePwd, bool disableCertificateCheck = false)
-			: this(production, new X509Certificate2(certificateData, certificateFilePwd,
-				X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable), disableCertificateCheck) { }
+			: this(production, GetCertificate(certificateData, certificateFilePwd), disableCertificateCheck) { }
 
 		public ApplePushChannelSettings(byte[] certificateData, string certificateFilePwd, bool disableCertificateCheck = false)
-			: this(new X509Certificate2(certificateData, certificateFilePwd,
-				X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable), disableCertificateCheck) { }
+			: this(GetCertificate(certificateData, certificateFilePwd), disableCertificateCheck) { }
 
 		public ApplePushChannelSettings(X509Certificate2 certificate, bool disableCertificateCheck = false)
 		{
@@ -51,6 +51,8 @@ namespace PushSharp.Apple
 		{
 			Initialize(production, certificate, disableCertificateCheck);
 		}
+
+		#endregion
 
 		void Initialize(bool production, X509Certificate2 certificate, bool disableCertificateCheck)
 		{
@@ -76,6 +78,17 @@ namespace PushSharp.Apple
 
             this.ValidateServerCertificate = false;
         }
+
+		/// <summary>
+		/// Gets an X509Certificate2 from the data and pwd, while using the required X509KeyStorageFlags.
+		/// Method moved here for DRY purposes, but also to allow users to get a X509 cert using the same settings
+		/// (for validation purposes or otherwise).
+		/// </summary>
+		public static X509Certificate2 GetCertificate(byte[] certificateData, string certificateFilePwd)
+		{
+			return new X509Certificate2(certificateData, certificateFilePwd,
+				X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+		}
 
 		public bool DetectProduction(X509Certificate2 certificate)
 		{
