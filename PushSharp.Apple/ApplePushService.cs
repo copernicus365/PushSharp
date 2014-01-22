@@ -15,6 +15,12 @@ namespace PushSharp.Apple
 		CancellationTokenSource cancelTokenSource;
 		Timer timerFeedback = null;
 
+		public static bool Default_RunFeedbackServicePriorToDispose { get; set; }
+
+		/// <summary>
+		/// On call to Dispose, will first call RunFeedbackService when true.
+		/// </summary>
+		public bool RunFeedbackServicePriorToDispose { get; set; }
 
 		#region Constructor Indirections
 
@@ -38,6 +44,7 @@ namespace PushSharp.Apple
 		public ApplePushService(IPushChannelFactory pushChannelFactory, ApplePushChannelSettings channelSettings, IPushServiceSettings serviceSettings)
 			: base(pushChannelFactory ?? new ApplePushChannelFactory(), channelSettings, serviceSettings)
 		{
+			RunFeedbackServicePriorToDispose = Default_RunFeedbackServicePriorToDispose;
 			var appleChannelSettings = channelSettings;
 			cancelTokenSource = new CancellationTokenSource();
 
@@ -84,6 +91,17 @@ namespace PushSharp.Apple
 		public override bool BlockOnMessageResult
 		{
 			get { return false; }
+		}
+
+		/// <summary>
+		/// Overrides PushServiceBase.Dispose, allow us to first call RunFeedbackService
+		/// if RunFeedbackServicePriorToDispose is true, then calls base.Dispose.
+		/// </summary>
+		public new void Dispose()
+		{
+			if(this.RunFeedbackServicePriorToDispose) // is FALSE by default
+				RunFeedbackService(); // has try/catch, so on ex should still reach base.Dispose()
+			base.Dispose();
 		}
 
 	}
